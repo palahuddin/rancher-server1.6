@@ -1,0 +1,1 @@
+{"dockerCompose":"version: '2'\r\nservices:\r\n  webserver:\r\n   image: my-dockerregistry/apps/webserver", "rancherCompose":"version: '2'\r\nservices:\r\n  webserver:\r\n   scale: 3\r\n   start_on_create: true",  "externalId":""}
