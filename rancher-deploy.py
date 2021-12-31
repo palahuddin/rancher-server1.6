@@ -2,23 +2,36 @@ import requests, re, time
 import os
 from dotenv import load_dotenv
 import json
+import yaml
 
-# from flask import Flask
-# app = Flask(__name__)
-# # @app.route("/")
-# def hello_world():
-#     return "<p>Hello, World!</p>"
 
 load_dotenv()
 
-def rancher_data():
+
+def compose_yaml():
+    with open('docker-compose.yml','r') as file:
+        data = file.read()
+        compose_data = yaml.full_load(data)
+        return (compose_data)
+
+def rancher_yaml():
+    with open('rancher-compose.yml','r') as file:
+        data = file.read()
+    rancher_data = yaml.full_load(data)
+    return (rancher_data)
+
+def read_json():
+    x = compose_yaml()
+    y = rancher_yaml()
+    compose = str(x)
+    rancher = str(y)
     if os.path.exists('deploy.json'):
         os.remove('deploy.json')
-    data = {"dockerCompose":"version: '2'\r\nservices:\r\n  "+os.getenv('SERVICE')+":\r\n    image: "+os.getenv('IMAGE')+":"+os.getenv('IMAGE_TAG'), "rancherCompose":"version: '2'\r\nservices:\r\n  "+os.getenv('SERVICE')+":\r\n   scale: 3\r\n   start_on_create: true",  "externalId":""}
+    data = {"dockerCompose": compose, "rancherCompose": rancher}
     with open('deploy.json','w') as deploy:
         json.dump(data, deploy)
 
-def upgrade_request():
+def post_request():
     url = "https://"+os.getenv('RANCHER_URL')+"/v2-beta/projects/"+os.getenv('PROJECT_ID')+"/stacks/"+os.getenv('ID')+"?action=upgrade"
     headers = {
         "Accept": "application/json",
@@ -26,7 +39,7 @@ def upgrade_request():
     }
     payload = open('deploy.json')
     url_call = requests.post(url, auth=(os.getenv('RANCHER_ACCESS_KEY'), os.getenv('RANCHER_SECRET_KEY')), headers=headers, data=payload)
-    upgrade_request.var = url_call.status_code
+    post_request.var = url_call.status_code
     res_text =  url_call.text
     return (payload)
 
@@ -60,13 +73,13 @@ def finish_upgraded():
     url_call = requests.post(url, auth=(os.getenv('RANCHER_ACCESS_KEY'), os.getenv('RANCHER_SECRET_KEY')), headers=headers)
     finish_upgraded.var = url_call.status_code
     res_text =  url_call.text
-    return (res_text)
+    return (res_text)        
 
 # @app.route("/api")
 def main():
-    rancher_data()
-    upgrade_request()
-    print ('Status Code',str(upgrade_request.var))
+    read_json()
+    post_request()
+    print ('Status Code',str(post_request.var))
     print ('++++++++++++++++++++++++++++++++')
     waiting_value()
     finish_upgraded()
@@ -77,5 +90,6 @@ def main():
     time.sleep(1)
     print ('Deployment Successfully....')
 
+    
 main()
 
